@@ -1,0 +1,37 @@
+
+
+iOS开发——BAT面试题合集（持续更新中）
+https://www.jianshu.com/p/75e4b9fdcf41
+
+
+AFNetworking详解-24篇
+https://www.jianshu.com/p/b11f588f4792
+
+算法:
+https://www.bilibili.com/video/av73008738/?p=7
+
+Array *Arr = [3,2,5,3,6];
+int max = maxFun(Arr);  //6
+int min = minFun(Arr);  //2
+
+MutableArray *Brr = @[].mutableCopy; 
+for (int val in Arr) {
+   if(Brr[val]) { //已经赋值过,将其值+1
+      Brr[val] = str( int(Brr[val]) + 1 );
+   } else {
+      Brr[val] = "1";
+   }
+} //Brr = [0,0,1,2,0,1,1]
+
+MutableArray *Crr = @[].mutableCopy; 
+for (int i = 0; i < Brr.count; i++) {
+     for (int k = 0; k < int(Brr[I]); k++) {
+         [Crr addObject:i];
+     }
+}
+
+
+基本思想：
+1.首先将待排序的数组构造成一个大根堆，此时，整个数组的最大值就是堆结构的顶端
+2.将顶端的数与末尾的数交换，此时，末尾的数为最大值，剩余待排序数组个数为n-1
+3.将剩余的n-1个数再构造成大根堆，再将顶端数与n-1位置的数交换，如此反复执行，便能得到有序数组
