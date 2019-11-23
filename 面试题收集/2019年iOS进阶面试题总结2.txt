@@ -1,0 +1,169 @@
+1.为什么代理要用weak？代理的delegate和dataSource有什么区别？block和代理的区别?
+
+A:为了避免循环引用。weak指明该对象并不负责保持delegate这个对象，delegate这个对象的销毁由外部控制。strong该对象强引用delegate，外界不能销毁delegate对象，会导致循环引用。DataSource是关于View的内容的东西包括属性，数据等等，而Delegate则是一些我们可以调用的方法，全是操作。block和代理都能解决对象间交互的问题，block更轻型，更简单，能够直接访问上下文，代码通常在同一个地方，这样读代码也连贯。缺点是容易引起循环引用。delegate更重一些，需要实现接口，它的方法分开来，很多时候需要存储一些临时数据，另外相关的代码需要分离到各处没有block好读，其优点就是它是用weak关键字修饰的，不会引起循环引用。
+2.属性的实质是什么？包括哪几个部分？属性默认的关键字都有哪些？@dynamic关键字和@synthesize关键字是用来做什么的？{#jump2}
+
+A:属性的本质是@property = ivar+getter+setter,也就是说@property系统会自动生成getter和setter方法。属性默认的关键字包括atomic，nonatomic，@synthesize，@dynamic，getter=getterName，setter=setterName，readwrite，readonly，assign，retain，copy。
+@dynamic：表示变量对应的属性访问器方法，是动态实现的，你需要在 NSObject 中继承而来的 +(BOOL) resolveInstanceMethod:(SEL) sel 方法中指定 动态实现的方法或者函数。
+@synthesize：如果没有实现setter和getter，编译器能够自动实现getter和setter方法。
+3.NSString为什么要用copy关键字，如果用strong会有什么问题？（注意：这里没有说用strong就一定不行。使用copy和strong是看情况而定的）
+
+A：针对于当把NSMutableString赋值给NSString的时候，才会有不同，用copy的话NSString的值不会发生变化，用strong则会发生变化，随着NSMutableString的值变化。如果是赋值是NSString对象，那么使用copy还是strong，结果都是一样的，因为NSString对象根本就不能改变自身的值，他是不可变的。
+4.如何令自己所写的对象具有拷贝功能?
+
+A:若想让自己写的对象具有拷贝功能，则需要实现NSCopying协议。如果自定义的对象分为可变版本和非可变版本，那么就要同时实现NSCopying和NSMutableCopying协议，不过一般没什么必要，实现NSCopying协议就够了。
+5.可变集合类 和 不可变集合类的 copy 和 mutablecopy有什么区别？如果是集合是内容复制的话，集合里面的元素也是内容复制么？
+
+A：对于不可变对象，copy操作是浅复制，mutableCopy是深复制。对于不可变对象，mutableCopy不仅仅是深复制，返回的对象类型还是不可变对象类型相应的可变对象的类型。内容复制也就是深拷贝，集合的深复制有两个方法，可以用initWithArray:copyItems:将第二个参数设置为YES即可进行深复制，如：NSDictionary *shallowCopyDict = [NSDictionary alloc]initWithDictionary:someDictionary copyItems:YES];如果用这个方法深复制，集合里的每个元素都会收到copyWithZone：消息。如果集合里的对象遵循NSCopying协议，那么对象就会深复制到新的集合。如果对象没有遵循NSCopying协议，而尝试用这种方法进行深复制则会出错。copyWithZone：这种拷贝方式只能提供一层内存拷贝，而非真正的深拷贝。第二种方法是将集合进行归档解档，如：NSArray *trueDeepCopyArray = [NSKeyedUnarchiver unarchiveObjectWithData:[NSKeyedArchiver archivedDataWithRootObject:oldArray]];
+6.为什么IBOutlet修饰的UIView也适用weak关键字？
+
+A:因为既然有外链那么视图在xib或者storyboard中肯定存在，视图已经对它有一个强引用了。
+7. nonatomic和atomic的区别？atomic是绝对的线程安全么？为什么？如果不是，那应该如何实现？
+
+A：nonatomic和atomic的区别在于两者自动生成getter和setter的方法不一样，如果你自己写getter和setter方法，那么（getter，setter，retain，copy，assign）只起提示作用，写不写都一样。
+对于atomic的属性，系统生成的getter和setter会保证get，set的操作完整性，不受其他线程影响。比如线程A的getter方法运行到一半，线程B调用了setter，那么线程A的getter还是能得到一个完整的对象。
+而nonatomic就没有这个保证了，所以速度要比atomic快。
+不过atomic可不能保证线程安全，如果线程A调用了getter，与此同时线程B和线程C都调了setter，那最后线程Aget到的值，三种都有可能：可能是B，C set之前原始的值，也可能是B set的值，也可能是C set的值。同时这个最终的值，也可能是B set的值，也可能是C set的值。要保证安全，可以使用线程锁。
+8.UICollectionView自定义layout如何实现？
+
+A:UICollectionViewLayoutAttributes，UICollectionViewFlowLayout。
+9.用StoryBoard开发界面有什么弊端？如何避免？
+
+A:难以维护，如果需要改动全局的一个字体，如果是代码的话就很好办，pch或头文件中改动就好了。如果是storyboard中就需要一个一个改动很麻烦。
+如果storyboard中scene太多，打开storyboard会比较慢。
+错误定位比较困难，好多错误提示模棱两可。
+10.进程和线程的区别？同步异步的区别？并行和并发的区别？
+
+A：进程是一个内存中运行的应用程序，比如在Windows系统中，一个运行的exe就是一个进程。
+线程是指进程中的一个执行流程。
+同步是顺序执行，执行完一个再执行下一个。需要等待，协调运行。
+异步就是彼此独立，在等待某事件的过程中继续做自己的事，不需要等待这些事件完成后再工作。
+并行和并发 是前者相当于三个人同时吃一个馒头，后者相当于一个人同时吃三个馒头。
+并发性（Concurrence）：指两个或两个以上的事件或活动在同一时间间隔内发生。并发的实质是一个物理CPU(也可以多个物理CPU) 在若干道程序之间多路复用，并发性是对有限物理资源强制行使多用户共享以提高效率。
+并行性（parallelism）指两个或两个以上事件或活动在同一时刻发生。在多道程序环境下，并行性使多个程序同一时刻可在不同CPU上同时执行。
+区别：(并发)一个处理器同时处理多个任务和（并行）多个处理器或者是多核的处理器同时处理多个不同的任务。
+11.线程间通信？
+
+A：NSThread、GCD、NSOperation。
+12.GCD的一些常用的函数？（group，barrier，信号量，线程同步）
+
+A：1.延迟执行任务函数：dispatch_after(.....)。
+2.一次性执行dispatch_once(...)。
+3.栅栏函数dispatch_barrier_async/dispatch_barrier_sync。
+4.队列组的使用dispatch_group_t。
+5.GCD定时器。
+13.如何使用队列来避免资源抢夺？
+
+A：dispatch_barrior_async 作用是在并行队列中，等待前面两个操作并行操作完成。
+14.数据持久化的几个方案（fmdb用没用过）
+
+A：Coredata，realm，fmdb。
+15.说一下AppDelegate的几个方法？从后台到前台调用了哪些方法？第一次启动调用了哪些方法？从前台到后台调用了哪些方法？
+
+A：
+1.当程序第一次运行并且将要显示窗口的时候执行，在该方法中我们完成的操作
+
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+
+2.程序进入后台的时候首先执行程序将要取消活跃该方法
+
+- (void)applicationWillResignActive:(UIApplication *)application
+
+3.该方法当应用程序进入后台的时候调用
+
+- (void)applicationDidEnterBackground:(UIApplication *)application
+
+4.当程序进入将要前台的时候调用
+
+- (void)applicationWillEnterForeground:(UIApplication *)application
+
+5.应用程序已经变得活跃（应用程序的运行状态）
+
+ - (void)applicationDidBecomeActive:(UIApplication *)application
+
+6.当程序将要退出的时候调用，如果应用程序支持后台运行，该方法被applicationDidEnterBackground:替换
+
+- (void)applicationWillTerminate:(UIApplication *)application
+
+16.NSCache优于NSDictionary的几点？
+
+A：NSCache 是一个容器类，类似于NSDIctionary,通过key-value 形式存储和查询值，用于临时存储对象。
+注意一点它和NSDictionary区别就是，NSCache 中的key不必实现copy，NSDictionary中的key必须实现copy。
+NSCache中存储的对象也不必实现NSCoding协议，因为毕竟是临时存储，类似于内存缓存，程序退出后就被释放了。
+17.知不知道Designated Initializer（指定初始化函数）？使用它的时候有什么需要注意的问题？
+
+A：比如：
+
+    - (instancetype)initWithNibName:(nullable NSString *)nibNameOrNil bundle:(nullable NSBundle *)nibBundleOrNil NS_DESIGNATED_INITIALIZER;
+    - (nullable instancetype)initWithCoder:(NSCoder *)aDecoder NS_DESIGNATED_INITIALIZER;　　
+
+18.实现description方法能取到什么效果？
+
+A：1.NSLog(@"%@", objectA);这会自动调用objectA的description方法来输出ObjectA的描述信息.
+2.description方法默认返回对象的描述信息(默认实现是返回类名和对象的内存地址)
+3.description方法是基类NSObject 所带的方法,因为其默认实现是返回类名和对象的内存地址, 这样的话,使用NSLog输出OC对象,意义就不是很大,因为我们并不关心对象的内存地址,比较关心的是对象内部的一些成变量的值。因此,会经常重写description方法,覆盖description方法的默认实现。
+19.objc使用什么机制管理对象内存？
+
+A：通过 retainCount 的机制来决定对象是否需要释放。 每次 runloop 的时候，都会检查对象的 retainCount，如果retainCount 为 0，说明该对象没有地方需要继续使用了，可以释放掉了。
+20.block的实质是什么？一共有几种block？都是什么情况下生成的？
+
+A：block对象就是一个结构体，里面有isa指针指向自己的类（global malloc stack），有desc结构体描述block的信息，__forwarding指向自己或堆上自己的地址，如果block对象截获变量，这些变量也会出现在block结构体中。最重要的block结构体有一个函数指针，指向block代码块。block结构体的构造函数的参数，包括函数指针，描述block的结构体，自动截获的变量（全局变量不用截获），引用到的__block变量。(__block对象也会转变成结构体)
+block代码块在编译的时候会生成一个函数，函数第一个参数是前面说到的block对象结构体指针。执行block，相当于执行block里面__forwarding里面的函数指针。
+21.static inline 是什么？
+
+A:static inline内联函数：使用它可以减少函数运行时间，提高程序运行速度。但内联函数里不能写循环，开关语句，而且最好不写过于冗长的函数。
+22.属性的默认关键字是什么？
+
+A:在声明property时，如果不指定关键字，编译器会为property生成默认的关键字。
+对应基本数据类型，默认关键字为atomic，assign，readwrite。
+对应对象类型，默认关键字为atomic，strong，readwrite。
+23.为什么在默认情况下无法修改被block捕获的变量？__block都做了什么？
+
+A：在block中访问的外部变量是复制过去的，写操作不对原变量生效。
+24.模拟一下循环引用的一个情况？block实现界面反向传值该怎么做？
+
+A：两个.h文件互相import了对方造成循环引用。block先声明（在要传值的controller里声明
+typedef void(^MyBlock)(NSString *name);//block的重命名
+@property (nonatomic,copy) MyBlock block;//block的声明），在准备接收值的页面里实现block，
+secondVC.block = ^void(NSString *name)
+{
+_label.text = name;
+};，谁要传值就在谁那里调用self.block(@"lalala");。
+25.iOS事件传递响应链是什么？
+
+A：当我们在使用微信等工具，点击扫一扫，就能打开二维码扫描视图。在我们点击屏幕的时候，iphone OS获取到了用户进行了“单击”这一行为，操作系统把包含这些点击事件的信息包装成UITouch和UIEvent形式的实例，然后找到当前运行的程序，逐级寻找能够响应这个事件的对象，直到没有响应者响应。这一寻找的过程，被称作事件的响应链。
+不同的响应者以链式方式寻找，AppDelegate->UIApplication->UIWindow->UIViewController->UIView->UIButton。
+26.利用kvo数据绑定，在mvvm模式中，数据绑定被用的很广泛，能够动态的根据数据改变刷新UI。
+27.多线程锁
+28.strong，weak，assign的区别
+29.类和结构体的区别
+30.怎么oc与swift混编？
+31.mrc与arc混编？
+32.http与tcp的区别？
+
+A：TCP连接:手机能够使用联网功能是因为手机底层实现了TCP/IP协议，可以使手机通过无线网络建立TCP连接。TCP协议可以对上层网络提供接口，使上层网络数据的传输建立在“无差别”的网络上。
+建立起一个TCP连接需要经过“三次握手”：
+第一次握手：客户端发送syn包（syn=j）到服务器，并进入SYN_SEND状态，等待服务器确认；
+第二次握手：服务器收到syn包，必须确认客户的SYN（ack=j+1），同时自己也发送一个SYN包（syn=k），即SYN+ACK包，此时服务器进入SYN_RECV状态；
+第三次握手：客户端收到服务器的SYN+ACK包，向服务器发送确认包ACK（ack=k+1），此包发送完毕，客户端和服务器进入ESTABLISHED状态，完成三次握手。
+握手过程中传送的包里不包含数据，三次握手完毕后，客户端和服务器才正式开始传送数据。理想状态下，TCP连接一旦建立，在通信双方中的任何一方主动关闭连接之前，TCP连接都将一直被保持下去。断开连接时服务器和客户端均可主动发起断开TCP连接的请求，断开过程需要经过“四次握手”。
+HTTP连接：HTTP协议即超文本传送协议，是Web联网的基础，也是手机联网常用的协议之一，HTTP协议是建立在TCP协议的一种应用。
+HTTP连接最显著的特点是客户端发送的每次请求都需要服务器回送响应，在请求结束后，会主动释放连接。从建立连接到关闭连接的过程称为“一次连接”。
+1.在HTTP 1.0中，客户端的每次请求都要求建立一次单独的连接，在处理完本次请求后，会自动释放连接。
+2.在HTTP 1.1中则可以在一次连接中处理多个请求，并且多个请求可以重叠进行，不需要等待一个请求结束后再发送下一个请求。
+由于HTTP在每次请求结束后都会主动释放连接，因此HTTP连接是一种短连接，要保持客户端程序的在线状态，需要不断地向服务器发起连接请求。通常的做法是即时不需要获得任何数据，客户端也保持每隔一段固定的时间向服务器发送一次“保持连接”的请求，服务器在收到该请求后对客户端进行回复，表明知道客户端“在线”。若服务器长时间无法收到客户端的请求，则认为客户端“下线”，若客户端长时间无法收到服务器的回复，则认为网络已经断开。
+33.进程间常用通信方式有哪些？
+
+A：1.URL Scheme
+2.Keychain
+3.UIPasteboard
+4.UIDocumentInteractionController
+5.Local socket
+6.AirDrop
+7.UIActivityViewController
+8.App Groups
+34.oc中对象是一个结构体。
+35.多态：类的一种特性。子类重写父类方法。
+————————————————
+版权声明：本文为CSDN博主「小石君」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/XiaoSiJun/article/details/87089140

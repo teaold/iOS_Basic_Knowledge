@@ -1,0 +1,355 @@
+准备找工作的你，可以看看，复习复习！！
+
+1、说一下OC的反射机制
+
+在动态运行下我们可以构建任何一个类，然后我们通过这个类知道这个类的所有的属性和方法，并且如果我们创建一个对象，我们也可以通过对象找到这个类的任意一个方法，这就是反射机制。
+比如NSClassFormString，NSStringFormSelector，NSSelectorFormString
+参考链接
+
+2、block的本质是什么？有几种block？分别是怎样产生的？
+
+参考链接
+block与函数类似，只不过是直接定义在另一个函数里，和定义它的那个函数共享同一个范围内的东西，
+block的强大之处是：在声明它的范围里，所有变量都可以为其捕获，这也就是说，那个范围内的全部变量，在block依然可以用，默认情况下，为block捕获的变量，是不可以在block里修改的，不过声明的时候可以加上__block修饰符，这样就可以再block内修改了。
+
+    block本身和其他对象一样，有引用计数，当最后一个指向block的引用移走之后，block就回收了，回收时也释放block所捕获的变量。
+
+Block的实现是通过结构体的方式实现，在编译的过程中，将Block生成对应的结构体，在结构体中记录Block的匿名函数，以及使用到的自动变量，在最后的使用中，通过Block结构体实例访问成员中存放的匿名函数地址调用匿名函数，并将自身作为参数传递。
+block其实就是C语言的扩充功能，实现了对C的闭包实现，一个带有局部变量的匿名函数，
+block的本质也是一个OC对象，它内部也有一个isa指针，block是封装了函数调用以及函数调用环境的OC对象，为了保证block内部能够正常访问外部的变量，block有一个变量捕获机制。static 修饰的变量为指针传递，同样会被block捕获。局部变量因为跨函数访问所以需要捕获，全局变量在哪里都可以访问 ，所以不用捕获。
+当block内部访问了对象类型的auto变量时，如果block在栈上，block内部不会对变量产生强应用，不论block的结构体内部的变量时__strong修饰还是__weak修饰，都不会对变量产生强引用
+默认情况下block不能修改外部的局部变量
+1.static修饰
+static修饰的age变量传递到block内部的是指针，在__main_block_func_0函数内部就可以拿到age变量的内存地址，因此就可以在block内部修改age的值。
+
+有三种类型
+
+    __NSGlobalBlock__ （ _NSConcreteGlobalBlock ）
+    __NSStackBlock__ （ _NSConcreteStackBlock ）
+    __NSMallocBlock__ （ _NSConcreteMallocBlock ）
+
+__block内存管理
+
+当block内存在栈上时，并不会对__block变量产生内存管理，当block被copy到堆上时会调用block内部的copy函数，copy函数内部会滴啊用_Block_object_assign函数，_Block_object_assign函数会对__block变量形成强引用(相当于retain)。
+当block被copy到堆上时，block内部引用的__block变量也会被复制到堆上，并且持有变量，如果block复制到堆上的同时，__block变量已经存在堆上了，则不会复制。
+
+当block从堆中移除的话，就会调用dispose函数，也就是__main_block_dispose_0函数，__main_block_dispose_0函数内部会调用_Block_object_dispose函数，会自动释放引用的__block变量。
+
+解决循环引用问题
+
+使用__weak和__unsafe_unretained修饰符合一解决循环引用的问题，__weak会使block内部将指针变为弱指针。
+__weak 和 __unsafe_unretained的区别。
+__weak不会产生强引用，指向的对象销毁时，会自动将指针置为nil
+__unsafe_unretained不会产生强引用，不安全，指向的对象销毁时，指针存储的地址值不变
+__strong 和 __weak
+在block内部重新使用__strong修饰self变量是为了在block内部有一个强指针指向weakSelf避免在block调用的时候weakSelf已经被销毁。
+
+2.__block修饰的变量为什么能在block里面能改变其值？
+
+__block用于解决block内部不能修改auto变量值的问题，__block不能修饰静态变量和全局变量
+_block 所起到的作用就是只要观察到该变量被 block 所持有，就将“外部变量”在栈中的内存地址放到了堆中。进而在block内部也可以修改外部变量的值。
+
+3.NSDictionary使用原理
+
+NSDictionary是使用hash表来实现key和vaLue之间的映射和存储的
+hash原理
+hash概念：哈希表的本质是一个数组，数组中没一个元素称为一个箱子，箱子中存放的是键值对。
+哈希表的存储过程:
+1.根据key计算出它的哈希值h
+2.假设箱子的个数为n，那么这个键值对应应该在第(h % n)个箱子中。
+3.如果该箱子中已经有了键值对，就使用开放寻址法或者拉链法解决冲突。
+在使用拉链法解决哈希冲突时，每个箱子其实是一个链表，属于同一个箱子的所有键值对都会排列在链表中。
+
+哈希表还有一个重要的属性:负载因子(load factor)，它用来衡量哈希表的空/满程度，一定程度上也可以体现查询的效率，计算公式为:
+
+4.NSCache优于NSDictionary的几点？
+
+NSCache是一个容器，类似于NSDictionary,通过key-value形式存储和查询值，用于临时存储对象。
+NSCache胜过NSDictionary之处在于，当系统资源将要耗尽时，它可以自动删减缓存。如果采用普通的字典，那么就要自己编写挂钩，在系统发出“低内存”通知时手工删减缓存。
+NSCache并不会“拷贝”键，而是会“保留”它。此行为用NSDictionary也可以实现，然而需要编写相当复杂的代码。NSCache对象不拷贝键的原因在于：很多时候，键都是不支持拷贝操作的对象来充当的。因此，NSCache不会自动拷贝键，所以说，在键不支持拷贝操作的情况下，该类用起来比字典更方便。另外，NSCache是线程安全的，而NSDictionary则绝对不具备此优势。
+
+5.属性
+
+属性是OC的一项特性，用于封装对象的数据，OC对象通常会把其所需要的数据保存为各种实例对象，实例对象一般通过存取方法来访问，其中获取方法用于读取变量值，而设置方法用于写入变量值，开发者可以令编译器自动编写与属性相关的存取方法。
+
+6.理解objc_msgSend的作用
+
+objc_msgSend叫做消息传递，消息有名称或选择子，可以接受参数
+Runtime时执行的流程是这样的：
+一个对象的方法像这样[obj foo]，编译器转成消息发送objc_msgSend(obj, foo)，Runtime时执行的流程是这样的：
+首先，通过obj的isa指针找到它的 class ;
+在 class 的 method list 找 foo ;
+如果 class 中没到 foo，继续往它的 superclass 中找 ;
+一旦找到 foo 这个函数，就去执行它的实现IMP 。
+
+7.什么是指针常量和常量指针
+
+指针常量：(指针变量前加const) int *const p;指针本身是一个常量。在声明的时候初始化，里面的值（存放的地址）不能更改。
+
+常量指针：(在类型前加const) const int *p;指针本身是一个变量，初始化是最好给一个常量的地址，它里面值（存放的地址）可以改变。
+
+8.若你去设计一个通知中心，你会怎样设计？
+
+传送门
+NSNotification:这是一个包装通知信息的类,类似一个model,存储了notificationName,object,userInfo等信息.
+NSNotificationCenter:顾名思义~通知中心,就是用来管理通知的接收和发送的类.
+1.定义一个类TestNotification,用来存储notificationName,object,userInfo等信息.这里我们仿照系统的API进行设计.这里另外加了两个参数observer和selector.
+2.设计通知中心类TestNotificationCenter,同样仿照系统的API进行设计.
+
+9. KVO、KVC的实现原理
+
+KVO是基于runtime机制实现的
+当某个类的属性对象第一次被观察时，系统就会在运行期动态地创建该类的一个派生类，在这个派生类中重写基类中任何被观察属性的setter 方法。派生类在被重写的setter方法内实现真正的通知机制
+如果原类为Person，那么生成的派生类名为NSKVONotifying_Person
+每个类对象中都有一个isa指针指向当前类，当一个类对象的第一次被观察，那么系统会偷偷将isa指针指向动态生成的派生类，从而在给被监控属性赋值时执行的是派生类的setter方法
+键值观察通知依赖于NSObject 的两个方法: willChangeValueForKey: 和 didChangevlueForKey:；在一个被观察属性发生改变之前， willChangeValueForKey:一定会被调用，这就 会记录旧的值。而当改变发生后，didChangeValueForKey:会被调用，继而 observeValueForKey:ofObject:change:context: 也会被调用。
+补充：KVO的这套实现机制中苹果还偷偷重写了class方法，让我们误认为还是使用的当前类，从而达到隐藏生成的派生类
+KVC底层实现原理(如下)
+KVC运用了一个isa-swizzling技术. isa-swizzling就是类型混合指针机制, 将2个对象的isa指针互相调换, 就是俗称的黑魔法.
+KVC主要通过isa-swizzling, 来实现其内部查找定位的. 默认的实现方法�由NSOject提供isa指针, 如其名称所指,(就是is a kind of的意思), 指向分发表对象的类. 该分发表实际上包含了指向实现类中的方法的指针, 和其它数据。
+
+首先搜索setKey:方法.(key指成员变量名, 首字母大写)
+2、上面的setter方法没找到, 如果类方法accessInstanceVariablesDirectly返回YES. 那么按 _key, _isKey，key, iskey的顺序搜索成员名.(NSKeyValueCodingCatogery中实现的类方法, 默认实现为返回YES)
+3、如果没有找到成员变量, 调用setValue:forUnderfinedKey:
+
+10.HTTP和HTTPs的请求过程？
+
+https://www.jianshu.com/p/55cb014f6079
+
+说说你理解weak属性？
+
+Runtime维护了一个weak表，用于存储指向某个对象的所有weak指针。weak表其实是一个hash（哈希）表，Key是所指对象的地址，Value是weak指针的地址（这个地址的值是所指对象的地址）数组。
+
+1、初始化时：runtime会调用objc_initWeak函数，初始化一个新的weak指针指向对象的地址。
+
+2、添加引用时：objc_initWeak函数会调用 objc_storeWeak() 函数， objc_storeWeak() 的作用是更新指针指向，创建对应的弱引用表。
+
+3、释放时，调用clearDeallocating函数。clearDeallocating函数首先根据对象地址获取所有weak指针地址的数组，然后遍历这个数组把其中的数据设为nil，最后把这个entry从weak表中删除，最后清理对象的记录。
+
+追问的问题一：
+
+1.实现weak后，为什么对象释放后会自动为nil？
+
+runtime 对注册的类， 会进行布局，对于 weak 对象会放入一个 hash 表中。 用 weak 指向的对象内存地址作为 key，当此对象的引用计数为 0 的时候会 dealloc，假如 weak 指向的对象内存地址是 a ，那么就会以 a 为键， 在这个 weak 表中搜索，找到所有以 a 为键的 weak 对象，从而设置为 nil 。
+
+追问的问题二：
+
+2.当weak引用指向的对象被释放时，又是如何去处理weak指针的呢？
+
+1、调用objc_release
+
+2、因为对象的引用计数为0，所以执行dealloc
+
+3、在dealloc中，调用了_objc_rootDealloc函数
+
+4、在_objc_rootDealloc中，调用了object_dispose函数
+
+5、调用objc_destructInstance
+
+6、最后调用objc_clear_deallocating,详细过程如下：
+
+a. 从weak表中获取废弃对象的地址为键值的记录
+
+b. 将包含在记录中的所有附有 weak修饰符变量的地址，赋值为 nil
+
+c. 将weak表中该记录删除
+
+d. 从引用计数表中删除废弃对象的地址为键值的记录
+
+10.iOS本地数据存储安全
+
+传送门
+
+11.BAD_ACCESS的错误吗？你是怎样调试的？
+
+BAD_ACCESS：不管什么时候当你遇到BAD_ACCESS这个错误，那就意味着你向一个已经释放的对象发送消息。
+
+BAD_ACCESS的本质：
+
+在C和OC中，你一直在处理指针，指针无非是存储另一个变量的内存地址的变量。当向一个对象发送消息时，指向该对象的指针将会被引用，这意味着，你获取了指针所指的内存地址，并访问该存储区域的值。
+当该存储器区域不再映射到你的应用时，或者换句话说，该内存区域在你认为使用的时候没有使用，该内存区域是无法访问的，这时内核会抛出一个异常(EXC)，表明你的应用程序不能访问该存储器区域(BAD_ACCESS).
+当你碰到BAD_ACCESS，这意味着你试图发送消息到的内存块，但内存块无法执行该消息。但是，在某些情况下，BAD_ACCESS是由被损坏的指针引起的，每当你的应用程序尝试引用损坏的指针，一个异常就会被内核抛出。
+调试请看
+
+12、不借用第三个变量，如何交换两个变量的值？要求手动写出交换过程。
+
+     int a = 10,b = 20;
+        a = a+b;
+        b = a - b;
+        a = a - b;
+    //第二种方法，位异或运算
+        a = a^b;
+        
+        b = a^b;
+        
+        a = a^b;
+        
+        
+        //第三种方法，使用指针
+        
+        int *pa = &a;
+        
+        int *pb = &b;
+        
+        *pa = b;
+        
+        *pb = a;
+        
+        NSLog(@"after,a = %d",a);
+        
+        NSLog(@"after,b = %d",b);
+
+13.用递归算法求1到n的和
+
+    int sum(int n)
+    {
+        if (n==1)
+            return 1;
+        else
+            return sum(n-1)+n;
+    }
+
+14.category为什么不能添加属性？
+
+Category不能添加成员变量，可以添加属性，但是属性要手动实现setter和getter方法。
+
+Category的原理
+
+简单地说就是通过runtime动态的吧Category中的方法等添加到类中，
+从category的定义也可以看出category的可为（可以添加实例方法，类方法，甚至可以实现协议，添加属性）和不可为（无法添加实例变量）。
+经过编译的类在程序启动后就被runtime加载，没有机会调用addIvar。程序在运行时动态构建的类需要在调用objc_registerClassPair
+之后才可以被使用，同样没有机会再添加成员变量。
+
+category为什么只能添加方法
+
+因为方法和属性并不“属于”类实例，而成员变量“属于”类实例。我们所说的“类实例”概念，指的是一块内存区域，包含了isa指针和所有的成员变量。所以假如允许动态修改类成员变量布局，已经创建出的类实例就不符合类定义了，变成了无效对象。但方法定义是在objc_class中管理的，不管如何增删类方法，都不影响类实例的内存布局，已经创建出的类实例仍然可正常使用。
+
+Category注意事项：
+
+1、category的方法没有“完全替换掉”原来类已经有的方法，也就是说如果category和原来类都有methodA，那么category附加完成之后，类的方法列表里会有两个methodA
+2、category的方法被放到了新方法列表的前面，而原来类的方法被放到了新方法列表的后面，这也就是我们平常所说的category的方法会“覆盖”掉原来类的同名方法，这是因为运行时在查找方法的时候是顺着方法列表的顺序查找的，它只要一找到对应名字的方法，就会罢休_，殊不知后面可能还有一样名字的方法。
+详细请点击
+
+15.runloop和线程的关系
+
+    runloop 正如其名，loop是一种循环，和run放在一起就是表示一直在运行着循环，实际上Runloop和线程是紧密相连的，可以这样说run loop是为了线程而生，没有线程，它就没有存在必要。每个线程，包括程序的主线程（ main thread ）都有与之相应的 run loop 对象。
+    主线程是默认开启的，其他线程需要手动开启
+
+深入理解
+
+16、说一下autoreleasePool的实现原理。
+
+    autoreleasePool自动释放池是OC的一种内存自动回收机制，它可以延时加入autoreleasePool中的变量release的时机，在正常情况下，创建的变量会在超出其作用于的时候release，但是如果将变量加入autoreleasePool，那么release将延迟执行。
+    AutoreleasePool创建是在一个RunLoop事件开始之前(push)，AutoreleasePool释放是在一个RunLoop事件即将结束之前(pop)。
+    AutoreleasePool里的Autorelease对象的加入是在RunLoop事件中，AutoreleasePool里的Autorelease对象的释放是在AutoreleasePool释放时。
+    单个自动释放池的执行过程就是objc_autoreleasePoolPush() —> [object autorelease] —> objc_autoreleasePoolPop(void *)
+
+详细点击
+
+17、说一下简单工厂模式，工厂模式以及抽象工厂模式？
+
+18、如何设计一个网络请求库？
+
+请进
+
+19、delegate
+
+    代理(delegate)的主旨是：定义一套接口，某个对象若想接受另一个对象的委托，则需遵从此接口，以便成为其委托对象，而这另一个对象的委托，则需遵从此接口，以便成为其委托对象，而这另一个对象则可以给其委托对象回传一些信息，也可以发生相关事件时通知委托对象。
+    注意delegate需定义成weak。因为两者之间必须为"非拥有关系"，通常情况下，扮演delegate的那个对象也要持有本对象。
+
+20、说一下多线程，你平常是怎么用的？
+
+全套链接
+
+21、说一下UITableViewCell的卡顿你是怎么优化的？
+
+    1.UITableViewCell重用机制？
+    UITableView只会创建一屏幕（或者一屏幕多一点）的cell，其他都是取出来重用的。每当cell滑出屏幕的时候，就会放到一个集合中，当要显示某一位置的cell时，会先去集合中取，有的话，就直接拿出来显示，没有在创建。
+
+    2.tableView滑动为什么会卡顿？
+    cell赋值内容时，会根据内容设置布局，也就可以知道cell的高度，若有1000行，就会调用1000次 cellForRow方法，而我们对cell的处理操作，都是在这个方法中赋值，布局等等，开销很大。
+
+    3.优化方法？
+    3.1优化：heightForRow方法处理cell高度。
+    思路：赋值和计算布局分离。cellForRow负责赋值，heightRorRow负责计算高度。
+
+    3.2自定义cell绘制：
+    各个信息都是根据之前算好的布局进行绘制的。需要异步绘制。重写draeRect方法就不需要异步绘制了，因为drawRect本来就是异步绘制的。图文混排的绘制，coreText绘制。
+
+    3.3按需加载（UIScrollView方面）：
+    如果目标行与当前行相差超过指定行数，只在目标滚动范围的前后制定n行加载。滚动很快时，只加载目标范围内得cell，这样按需加载，极大地提高了流畅性。
+
+    4.总结
+    1.提前计算并缓存好高度，因为heightForRow最频繁的调用。
+    2.异步绘制，遇到复杂界面，性能瓶颈时，可能是突破口。
+    3.滑动时按需加载，这个在大量图片展示，网络加载时，很管用。（SDWebImage已经实现异步加载）。
+    4.重用cells。
+    5.如果cell内显示得内容来自web，使用异步加载，缓存结果请求。
+    6.少用或不用透明图层，使用不透明视图。
+    7.尽量使所有的view opaque，包括cell本身。
+    8.减少subViews
+    9.少用addView给cell动态添加view，可以初始化的时候就添加，然后通过hide控制是否显示。
+
+22、看过哪些三方库？说一下实现原理以及好在哪里？
+
+精确试试
+
+23、说一下HTTP协议以及经常使用的code码的含义。
+
+全套code
+
+24、设计一套缓存策略。
+
+不清楚 有知道的可以回答下
+
+25、HTTP协议 HTTPS
+
+    HTTP协议:即超文本传输协议，是一种详细规定了浏览器和万维网服务器之间互相通信的规则，通过因特网传送万维网文档的数据传送协议
+    HTTP协议作用：HTTP协议是用于从www服务器传输超文本到本地浏览器的传送协议，它可以使浏览器更加高效，使网络传输减少，它不仅保证计算机正确快速的传输超文本文档，还确定传输文档的哪一部分，以及哪部分内容首先显显示等。
+    URL:我们在浏览器的地址栏里输入的网站地址叫做URL (Uniform Resource Locator，统一资源定位符)。就像每家每户都有一个门牌地址一样，每个网页也都有一个Internet地址。当你在浏览器的地址框中输入一个URL或是单击一个超级链接时，URL就确定了要浏览的地址。浏览器通过超文本传输协议(HTTP)，将Web服务器上站点的网页代码提取出来，并翻译成漂亮的网页。
+    HTTPS:：是以安全为目标的HTTP通道，简单讲HTTP的安全版，即HTTP下加入SSL层，HTTPS的安全基础是SSL，因此加密的详细内容就需要SSL。
+
+26、设计一个检测主线和卡顿的方案。
+
+27、说一下runtime，工作是如何使用的？看过runtime源码吗？
+
+28、说几个你在工作中使用到的线程安全的例子。
+
+29、用过哪些锁？哪些锁的性能比较高？
+
+30、说一下HTTP和HTTPs的请求过程？
+
+    在HTTP/1.1协议中，定义了8种发送HTTP请求的方法
+    GET、POST、OPTIONS、HEAD、PUT、DELETE、TRACE、CONNECT、PATCH
+    各个方法的解释如下（所有方法全为大写）：
+    GET: 请求获取Request-URI所标识的资源
+    POST: 在Request-URI所标识的资源后附加新的数据
+    HEAD: 请求获取由Request-URI所标识的资源的响应消息报头
+    PUT: 请求服务器存储一个资源，并用Request-URI作为其标识
+    DELETE: 请求服务器删除Request-URI所标识的资源
+    TRACE: 请求服务器回送收到的请求信息，主要用于测试或诊断
+    CONNECT: 保留将来使用
+    OPTIONS: 请求查询服务器的性能，或者查询与资源相关的选项和需求
+
+根据HTTP协议的设计初衷，不同的方法对资源有不同的操作方式
+PUT ：增
+DELETE ：删
+POST：改
+GET：查
+最常用的是GET和POST（实际上GET和POST都能办到增删改查）
+详细内容
+31、说一下TCP和UDP
+32、说一下静态库和动态库之间的区别
+33、load和initialize方法分别在什么时候调用的？
+34、NSNotificationCenter是在哪个线程发送的通知？
+35、用过swift吗？如果没有，平常有学习吗？
+36、说一下你对架构的理解？
+
+37、为什么一定要在主线程里面更新UI？
+
+    像UIKit这样大的框架上确保线程安全是一个重大的任务，会带来巨大的成本。UIKit不是线程安全的，假如在两个线程中设置了同一张背景图片，很有可能就会由于背景图片被释放两次，使得程序崩溃。或者某一个线程中遍历找寻某个subView，然而在另一个线程中删除了该subView，那么就会造成错乱。apple有对大部分的绘图方法和诸如UIColor等类改写成线程安全可用，可还是建议将UI操作保证在主线程中。
+
+
+————————————————
+版权声明：本文为CSDN博主「小石君」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/XiaoSiJun/article/details/87088432

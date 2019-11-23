@@ -1,0 +1,588 @@
+1.简述OC中内存管理机制
+
+1.1 OC的内存管理机制是自动引用计数，内存管理的原则是谁开辟谁释放，有retain的地方就要有release
+
+1.2 内存管理分为ARC和MRC，在MRC下我们需要手动管理内存，需要使用到retain/copy/release/autorelease等方法实现内存管理。ARC下则一般不需要我们手动管理，系统会在适当的位置加上内存管理关键字。
+
+1.3 retain是引用计数+1, 在内存管理中, 要记得内存管理原则: 谁开辟谁释放, 有retain就要有release.  release是引用计数-1. alloc匹配的是dealloc, alloc是开辟内存空间, dealloc是销毁所开辟的内存, 有开辟就要有销毁.
+
+ 
+
+2.readwrite，readonly，assign，retain，copy，nonatomic 、atomic、strong、weak属性的作用？
+
+readWrite读写特性, 可读可写.
+
+readonly只读, 只有getter, 没有setter.
+
+assign一般用于基本数据类型和ID类型.
+
+copy拷贝, 一般用于  NSString. 分为深拷贝和浅拷贝, 深拷贝拷贝的是对象, 浅拷贝拷贝的是指针. nonatomic非原子性, 不考虑线程安全, 优点是效率高.
+
+atomic原子性, 有点是线程安全, 缺点是效率低.
+
+strong强引用, 和MRC下的retain一样. weak弱引用, 类似MRC下的assign. 但是要注意的是strong和weak都是修饰对象类型的属性的, 不能修饰基本数据类型. ARC下仍然使用assign修饰基本数据类型. 
+
+ 
+
+3.关于iOS多线程问题
+
+仔细阅读：http://www.cocoachina.com/ios/20150731/12819.html
+
+ 
+
+4.提升UITableView性能的几点建议
+
+仔细阅读：http://www.cocoachina.com/ios/20150729/12795.html
+
+ 
+
+6. 线程同步和异步的区别？
+
+同步：一个线程要等待上一个线程执行完之后才能执行当前的线程，生活中的例子（上厕所）。
+
+异步：同时去做两件或者多件事。比如边听歌边看报。
+
+ 
+
+7.堆和栈的区别？
+
+栈区（stack）--由编译器自动分配释放，存放函数的参数值、局部变量的值。先进后出
+
+堆区（heap）--一般由程序员分配释放。先进先出
+
+全局区（静态区）（static）--全局变量和静态变量。程序结束后由系统释放。         
+
+文字常量区--常量字符串存放在这里。程序结束后由系统释放。         
+
+程序代码区—存放函数体的二进制文件。
+
+ 
+
+8.  iOS类是否可以多继承？
+
+不可以，可以通过delegate和protocol和类别来实现类似多继承。
+
+ 
+
+9.iOS本地数据存储都有哪几种方式？iOS如何实现复杂对象的存储？
+
+1. Write写入方式：永久保存在磁盘中。但是只支持NSString、NSData、NSArray、NSDictionary。    2.NSKeyedArchiver（归档）采用归档的形式来保存数据，该数据对象需要遵守NSCod-ing协议，并且该对象对应的类必须提供encodeWithCoder:和initWithCoder:方法。
+
+3.SQLite（FMDB）注意FMDB不是数据库, 而是一个SQLITE管理框架. 
+
+4.CoreData切记coredata不是数据库, 他的存储核心思想是托管对象, 只是咱们经常用的存储文件为SQLite.还可以用XML, 二进制等方式.
+
+ 
+
+10.iOS的动态性 
+
+ 1.动态类型。 如id类型。实际上静态类型因为其固定性和可预知性而使用得更加广泛。静态类型是强类型，而动态类型属于弱类型。运行时决定接收者。
+
+2. 动态绑定。让代码在运行时判断需要调用什么方法，而不是在编译时。与其他面向对象语言一样，方法调用和代码并没有在编译时连接在一起，而是在消息发送时才进行连接。运行时决定调用哪个方法。
+
+3. 动态载入。让程序在运行时添加代码模块以及其他资源。用户可以根据需要加载一些可执行代码和资源，而不是在启动时就加载所有组件。可执行代码中可以含有和程序运行时整合的新类。
+
+ 
+
+11.深拷贝和浅拷贝的理解？
+
+深拷贝拷贝的是内容，浅拷贝拷贝的是指针。深拷贝和浅拷贝最大的区别就是子类对象的地址是否改变，如果子类对象的地址改变那么就是深拷贝。
+
+ 
+
+12.什么是安全释放
+
+在对象dealloc中release之后再把指针置为nil
+
+ 
+
+13.怎样实现一个singleton。
+
++ (ZMYSingleton *) sharedInstance {
+
+     static LOSingleton *sharedInstance = nil ;
+
+    static dispatch_once_t onceToken;  // 锁
+
+   dispatch_once (& onceToken, ^ {
+
+      // 最多调用一次       
+
+    sharedInstance = [[ZMYSingleton  alloc] init];  
+
+});   
+
+return  sharedInstance;
+
+}
+
+ 
+
+13.RunLoop是什么？
+
+一个RunLoop就是一个事件处理的循环，用来不停的调度工作以及处理输入时间。使用runloop的目的是让你的线程在有工作的时候忙于工作,而没工作的时候处于休眠状态。runloop的设计是为了减少cpu无谓的空转。每个开辟的线程都有一个Runloop, 主线程的Runloop时默认开启的, 咱们手动开辟的子线程Runloop是默认不开启的, 如果需要开启, 需要调用API[[NSRunloop  currentRunloop] run]开启.最常见的需要开启Runloop的是在子线程里面调用计时器(NSTimer), 如果不开启runloop循环方法就不能正常执行.
+
+ 
+
+14.写一个标准宏MIN，这个宏输入两个参数并返回较小的一个？
+
+#define kMIN(X,Y)  ((X) > (Y)) ? (Y) :(X) 
+
+ 
+
+15.简述应用程序按Home键进入后台时的生命周期，以及从后台回到前台时的生命周期？
+
+进入后台生命周期走：   
+
+- (void)applicationWillResignActive:(UIApplication*)application;  
+
+- (void)applicationDidEnterBackground:(UIApplication*)application;  
+
+回到前台生命周期走：   
+
+- (void)applicationWillEnterForeground:(UIApplication*)application;  
+
+- (void)applicationDidBecomActive:(UIApplication*)application;
+
+ 
+
+16.ViewController的loadView, viewDidLoad,viewWillAppear,viewDidUnload,dealloc、init分别是在什么时候调用的？在自定义ViewController的时候这几个函数里面应该做什么工作？
+
+loadView:没有正在使用nib视图页面，子类将会创建自己的自定义视图层
+
+viewDidLoad:试图被加载后调用
+
+viewWillAppear：试图即将出现的时候调用
+
+viewDidUnload：<iOS6之后废弃>当系统内存吃紧的时候会调用该方法,释放掉当前未在window中显示的试图和对应的控制器
+
+ 
+
+17.描述应用程序的启动顺序。
+
+1、程序入口main函数创建UIApplication实例和UIApplication代理实例
+
+2、在UIApplication代理实例中重写启动方法，设置第一ViewController
+
+3、在第一ViewController中添加控件，实现对应的程序界面。
+
+ 
+
+18.为什么写代理的属性都是assign而不是retain？请举例说明。
+
+防止循环引用，
+
+Teacher *teacher=[[Teacher alloc] init];
+
+Student * student=[[Student alloc] init];t
+
+eacher.delegate=student;
+
+student.delegate= teacher;
+
+在teacher中dealloc会release当前的Delegate，就会触发student对象release，继而也会导致student执行dealloc，在student中也会release自己的delegate，产生循环了。
+
+ 
+
+19.UIImage初始化一张图片有几种方法？简述各自的优缺点。
+
+1、从资源读取 , 这个方法的图片是从缓存里面获取的, 先在缓存里面查看是不是有这个图片, 没有的话将图片添加进缓存再使用. 有的话直接使用缓存里面的. 如果这张图片用的次数比较多的话, 建议使用这种方式. 缺点是效率低下.UIImage *image = [UIImage imageNamed:@”1.png”];
+
+2 .从手机本地读取, 比较第一种方式, 这个事直接加载图片的. 所以建议在图片使用率低的图片时 使用这个方法.  //读取本地图片非resourceNSString *aPath3=[NSString stringWithFormat:@"%@/Documents/%@.jpg",NSHomeDirectory(),@"test"];[UIImage imageWithContentsOfFile:aPath3]
+
+ 
+
+20.这段代码有什么问题吗:
+
+@implementation Person
+
+- (void)setAge:(int)newAge {
+
+         self.age = newAge;
+
+}
+
+@end
+
+死循环
+
+ 
+
+21.用OC写一个冒泡排序
+
+ NSMutableArray *array = [NSMutableArray arrayWithArray:@[@"3",@"1",@"10",@"5",@"2",@"7",@"12",@"4",@"8"]];
+
+    for (int i = 0; i < array.count; i ++) {
+
+        for (int j = 0; j < array.count  - 1 - i; j++) {
+
+            if([[array objectAtIndex:j] integerValue] > [[array objectAtIndex:j + 1] integerValue]) {
+
+               [array exchangeObjectAtIndex:j withObjectAtIndex:j + 1];
+
+           }
+
+       }
+
+   }
+
+    NSLog(@"%@", array);
+
+ 
+
+22.简述你对UIView、UIWindow和CALayer的理解
+
+UIView继承于UIResponder, UIResponder继承于NSObject,UIView可以响应用户事件。
+
+CALayer继承于NSObject，所以CALayer不能响应事件。 UIView构建界面,UIView侧重于对内容的管理，CALayer侧重于对内容的绘制。 UIView是用来显示内容的，可以处理用户事件；CALayer是用来绘制内容的，对内容进行动画处理，依赖与UIView来进行显示，不能处理用户事件。
+
+ 
+
+23.frame和bounds区别：
+
+仔细阅读：http://blog.csdn.net/mad1989/article/details/8711697
+
+ 
+
+24.写一个完整的代理
+
+ 
+
+25.分析json、xml的区别？json、xml解析方式的底层是如何处理的？
+
+XML是标准通用标记语言 (SGML)的子集，非常适合 Web 传输。XML 提供统一的方法来描述和交换独立于应用程序或供应商的结构化数据。   
+
+JSON(JavaScriptObject Notation)一种轻量级的数据交换格式，具有良好的可读                                 和便于快速编写的特性。可在不同平台之间进行数据交换。JSON采用兼容性很高的、完全独立 于语言文本格式，同时也具备类似于C语言的习惯(包括C,     C++, C#, Java, JavaScript, Perl,Python等)体系的行为。这些特性使JSON成为理想 的数据交换语言。
+
+ 
+
+26.ViewController 的 didReceiveMemoryWarning 是在什么时候被调用的？默认的操作是什么?
+
+didReceiveMemoryWarning在出现内存警告的时候执行该方法，在该方法里面释放掉暂时没使用的可重用的对象。这个方法不能手动调用.
+
+ 
+
+27.面向对象的三大特征，并作简单的介绍
+
+封装、继承、多态。
+
+封装：是把客观事物封装成抽象的类，隐藏内部的实现，对外部提供接口。
+
+继承：可以使用现有类的所有功能，并且在无需重新编写原来的类的情况下对这些功能进行扩展。
+
+多态：不同的对象以自己的方式响应相同的的消息的能力叫做多态，或者说父类指针指向子类对象<如UITableView的，cellForRow方法，返回值类型是UITbaleViewCell，但是你返回的cell可以是你自定义的cell,在比如多个类里面都有同一个方法>
+
+ 
+
+28.简单说一下懒加载
+
+懒加载，又称为延迟加载。通常用法，你有一个UITextField类 型的property，简单定义为userNameTextField，但是你不在初始化方法里为其alloc/init，它就只是一个指针，不会占用内 存。在访问器里判断此property的指针是否为空，若为空，就alloc/init，这时才真正生成这个对象除非这个对象被使用，否则它永远不会真正 生成，也就不会占用内存。
+
+ 
+
+29.分别描述类目（categories）和延展（extensions）是什么？以及两者的区别？继承和类目在实现中有何区别？为什么Category只能为对象添加方法，却不能添加成员变量？
+
+category类目：在不知道源码的情况下为一个类扩展方法，
+
+extension：为一个类声明私有方法和变量。 继承是创建了一个新的类，而类别只是对类的一个扩展，还是之前的类。 类目的作用就是为已知的类添加方法。
+
+ 
+
+30. #import、#include和@class有什么区别
+
+#include c语言中引入一个头文件，但是可能出现交叉编译,
+
+OC里面已经没有这个方式引入头文件了, 统一使用#import
+
+#import在OC中引入自己创建的头文件
+
+#import””是引入自己创建类的头文件
+
+#import<>是引入系统类的头文件
+
+#import不会出现交叉编译
+
+@class对一个类进行声明，告诉编译器有这个类，但是类的定义什么的都不知道.
+
+ 
+
+31.谈谈你对MVC的理解？为什么要用MVC？在Cocoa中MVC是怎么实现的？你还熟悉其他的OC设计模式或别的设计模式吗？
+
+MVC是Model-VIew-Controller，就是模型－视图－控制器, MVC把软件系统分为三个部分：Model，View，Controller。在cocoa中，你的程序中的每一个object（对象）都将明显地仅属于这三部分中的一个，而完全不属于另外两个。model数据模型，view是对这些数据的显示，viewcontroller就是把model拿到view中显示，起到model和view之间桥梁的作用。MVC可以帮助确保帮助实现程序最大程度的可重用性。各MVC元素彼此独立运作，通过分开这些元素，可以构建可维护，可独立更新的程序组建, 提高代码的重用性.
+
+单例模式，delegate设计模式，target-action设计模式
+
+ 
+
+32.字符串替换方法：
+
+[string stringByReplacingOccurrencesOfString:@"png" withString: @""]
+
+ 
+
+33.对于语句NSString* testObject = [[NSData alloc] init];        testObject 在编译时和运行时分别是什么类型的对象？
+
+编译的时候是NSString类型，运行的时候是NSData类型
+
+ 
+
+34.什么是沙盒（sandbox）？沙盒包含哪些文件，描述每个文件的使用场景。如何获取这些文件的路径？如何获取应用程序包中文件的路径？
+
+iOS应用程序只能在为该改程序创建的文件系统中读取文件，不可以去其它地方访问，此区域被成为沙盒，所以所有的非代码文件都要保存在此，例如图像，图标，声音，映像，属性列表，文本文件等。 默认情况下，每个沙盒含有3个文件夹：Documents, Library 和 tmp。 Documents：苹果建议将程序中建立的或在程序中浏览到的文件数据保存在该目录下，iTunes备份和恢复的时候会包括此目录 Library：存储程序的默认设置或其它状态信息；
+
+Library/Caches：存放缓存文件，iTunes不会备份此目录，此目录下文件不会在应用退出删除
+
+tmp：提供一个即时创建临时文件的地方。
+
+iTunes在与iPhone同步时，备份所有的Documents和Library文件。
+
+iPhone在重启时，会丢弃所有的tmp文件。
+
+ 
+
+35.    isKindOfClass、isMemberOfClass作用分别是什么？
+
+-(BOOL) isKindOfClass: classObj判断是否是这个类或者是这个类子类的实例
+
+-(BOOL) isMemberOfClass: classObj 判断是否是这个类的实例
+
+36．http://blog.csdn.net/huifeidexin_1/article/details/7566226
+
+37. UITableView –UIScrollView – UIView – UIResponder - NSObject 
+
+ 
+
+答:Grand Central Dispatch简称GCD 解决多核并行运算的一种方案
+
+看代码就行：
+
+//  Grand CentralDispatch简称GCD技术
+
+   
+
+// Do any additional setup after loading the view.
+
+   
+
+//   dispatch_queue_t newDispath =dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+
+//   dispatch_async(newDispath, ^{
+
+//        [selfdownloadImage];
+
+//    });
+
+   
+
+//   #defineDISPATCH_QUEUE_PRIORITY_HIGH 2
+
+//    #defineDISPATCH_QUEUE_PRIORITY_DEFAULT  0
+
+//   #defineDISPATCH_QUEUE_PRIORITY_LOW (-2)
+
+//   #defineDISPATCH_QUEUE_PRIORITY_BACKGROUNDINT16_MIN
+
+   
+
+   
+
+   
+
+   
+
+   /*dispatch queue分为下面三种：
+
+    * Serial:又称为private dispatch queues，同时只执行一个任务。Serial queue通常用于同步访问特定的资源或数据。当你创建多   个        Serial queue时，虽然它们各自是同步执行的，但Serial queue与Serial queue之间是并发执行的。
+
+    * Concurrent: 又称为global dispatch queue，可以并发地执行多个任务，但是执行完成的顺序是随机的。
+
+    * Main dispatchqueue它是全局可用的serial queue，它是在应用程序主线程上执行任务的
+
+    */
+
+   
+
+   //  一般GCD 可以如下操作
+
+   
+
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT,0),^{
+
+        // 耗时的操作
+
+      dispatch_async(dispatch_get_main_queue(), ^{
+
+            // 更新界面
+
+        });
+
+    });
+
+   
+
+   [selfexampleDispatch];
+
+   
+
+    /*
+
+     *系统给每一个应用程序提供了三个concurrent dispatch queues。
+
+     *这三个并发调度队列是全局的，它们只有优先级的不同。
+
+     *因为是全局的，我们不需要去创建。我们只需要通过使用函数dispath_get_global_queue去得到队列
+
+     */
+
+   
+
+   dispatch_queue_tglobalQ =dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT,0);
+
+   
+
+   NSLog(@"global:%p",globalQ);
+
+   dispatch_queue_t mainQ =dispatch_get_main_queue();
+
+    NSLog(@"mainQ:%p",mainQ);
+
+    /*
+
+     *虽然dispatch queue是引用计数的对象，但是以上两个都是全局的队列，不用retain或release。
+
+     */
+
+   
+
+   
+
+   
+
+    /*
+
+    *dispatch_group_async可以实现监听一组任务是否完成，完成后得到通知执行其他的操作。
+
+     *这个方法很有用，比如你执行三个下载任务，当三个任务都下载完成后你才通知界面说完成的了。
+
+     */
+
+    timeInt = 0;
+
+   [NSTimerscheduledTimerWithTimeInterval:1
+
+                                    target:self
+
+                                 selector:@selector(checkingTime)
+
+                                  userInfo:nil
+
+                                  repeats:YES];
+
+   [selfexampleDispath_group];
+
+   
+
+   
+
+  /*dispatch_barrier_async的使用
+
+    *dispatch_barrier_async是在前面的任务执行结束后它才执行，而且它后面的任务等它执行完成之后才会执行
+
+     */
+
+   
+
+   [selfexampleDispatch_barrier];
+
+   
+
+   
+
+   /*dispatch_apply
+
+     *执行某个代码片段N次。
+
+     */
+
+   dispatch_apply(5, globalQ, ^(size_t index) {
+
+        // 执行5次
+
+    });
+
+39. 该问题涉及编译器的“内存对齐”问题： 
+
+现代计算机中内存空间都是按照byte（字节）划分的，从理论上讲似乎对任何类型的变量的访问可以从任何地址开始，但实际情况是在访问特定变量的时候经常在特定的内存地址访问，这就需要各类型数据按照一定的规则在空间上排列，而不是顺序的一个接一个的排放，这就是对齐。   
+
+对齐的作用和原因：各个硬件平台对存储空间的处理上有很大的不同。一些平台对某些特定类型的数据只能从某些特定地址开始存取。其他平台可能没有这种情况，但是最常见的是如果不按照适合其平台的要求对数据存放进行对齐，会在存取效率上带来损失。比如有些平台每次读都是从偶地址开始，如果一个int型（假设为 32位）如果存放在偶地址开始的地方，那么一个读周期就可以读出，而如果存放在奇地址开始的地方，就可能会需要2个读周期，并对两次读出的结果的高低字节进行拼凑才能得到该int数据。显然在读取效率上下降很多。这也是空间和时间的博弈。
+
+通常，我们写程序的时候，不需要考虑对齐问题。编译器会替我们选择适合目标平台的对齐策略。当然，我们也可以通知给编译器传递预编译指令而改变对指定数据的对齐方法。 
+
+但是，正因为我们一般不需要关心这个问题，所以因为编辑器对数据存放做了对齐，而我们不了解的话，常常会对一些问题感到迷惑。最常见的就是struct数据结构的sizeof结果，出乎意料。 
+
+对于结构体来说，按成员中所占字节最大的是float类型，占用4个字节，一共有3个成员，所以总的占用字节为：4 ＊ 3 ＝ 12.       可通过编译器命令来设定：       
+
+#progma pack (2)   
+
+ 
+
+40.TCP：Transmission Control Protocol 传输控制协议TCP是一种面向连接（连接导向）的、可靠的、基于字节流的运输层（Transport layer）通信协议，由IETF的RFC 793说明（specified）。 UDP是User Datagram Protocol的简称，中文名是用户数据包协议，是 OSI 参考模型中一种无连接的传输层协议，提供面向事务的简单不可靠信息传送服务，IETF RFC 768是UDP的正式规范。   
+
+面向连接：是指通信双方在通信时，要事先建立一条通信线路，其有三个过程：建立连接、使用连接和释放连接。电话系统是一个面向连接的模式，拨号、通话、挂机；TCP协议就是一种面向连接的协议。 
+
+面向无连接：是指通信双方不需要事先建立一条通信线路，而是把每个带有目的地址的包（报文分组）送到线路上，由系统自主选定路线进行传输。邮政系统是一个无连接的模式，天罗地网式的选择路线，天女散花式的传播形式；IP、UDP协议就是一种无连接协议。
+
+ 
+
+41. 注意问的是应用层协议，有些同学直接答了七层模型。 
+
+      在开放系统互连(OSI)模型中的最高层，为应用程序提供服务以保证通信，但不是进行通信的应用程序本身。   
+
+Telnet协议是TCP/IP协议族中的一员，是Internet远程登陆服务的标准协议和主要方式。它为用户提供了在本地计算机上完成远程主机工作的能力。   
+
+FTP文件传输协议是TCP/IP网络上两台计算机传送文件的协议，FTP是在TCP/IP网络和INTERNET上最早使用的协议之一，它属于网络协议组的应用层。
+
+超文本传输协议 (HTTP-Hypertext transfer protocol) 是分布式，协作式，超媒体系统应用之间的通信协议。是万维网（world wide web）交换信息的基础。   
+
+SMTP（Simple Mail Transfer Protocol）即简单邮件传输协议,它是一组用于由源地址到目的地址传送邮件的规则，由它来控制信件的中转方式，它帮助每台计算机在发送或中转信件时找到下一个目的地。   
+
+时间协议(TIME protocol)是一个在RFC 868内定义的网络协议。它用作提供机器可读的日期时间资讯。
+
+ 
+
+  DNS是域名系统 (Domain Name System) 的缩写，是因特网的一项核心服务，它作为可以将域名和IP地址相互映射的一个分布式数据库。   
+
+SNMP(Simple Network Management Protocol,简单网络管理协议)的前身是简单网关监控协议(SGMP)，用来对通信线路进行管理。   
+
+TFTP（Trivial File Transfer Protocol,简单文件传输协议）是TCP/IP协议族中的一个用来在客户机与服务器之间进行简单文件传输的协议，提供不复杂、开销不大的文件传输服务。端口号为69。
+
+ 
+
+42.static关键字的作用
+
+静态全局变量
+
+优点：
+
+1、节省内存。静态变量只存储一处，但供所有对象使用。
+
+2、它的值是可以更新的。
+
+3、可提高时间效率。只要某个对象对静态变量更新一次，所有的对象都能访问更新后的值。
+
+ 
+
+43.iOS系统框架分为几层，分别是什么
+
+  
+
+ 1、Core OS是位于iOS系统架构最下面的一层是核心操作系统层，它包括内存管理、文件系统、电源管理以及一些其他的操作系统任务。它可以直接和硬件设备进行交互。作为app开发者不需要与这一层打交道。
+
+      2、Core Services是核心服务层，可以通过它来访问iOS的一些服务。
+
+      3、Media是媒体层，通过它我们可以在应用程序中使用各种媒体文件，进行音频与视频的录制，图形的绘制，以及制作基础的动画效果。 
+
+      4、Cocoa Touch是可触摸层，这一层为我们的应用程序开发提供了各种有用的框架，并且大部分与用户界面有关，本质上来说它负责用户在iOS设备上的触摸交互操作。
+————————————————
+版权声明：本文为CSDN博主「crazyzhang1990」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/CrazyZhang1990/article/details/49299663
