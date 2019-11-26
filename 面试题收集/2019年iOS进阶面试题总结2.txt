@@ -79,7 +79,7 @@ A：
 
 5.应用程序已经变得活跃（应用程序的运行状态）
 
- - (void)applicationDidBecomeActive:(UIApplication *)application
+- (void)applicationDidBecomeActive:(UIApplication *)application
 
 6.当程序将要退出的时候调用，如果应用程序支持后台运行，该方法被applicationDidEnterBackground:替换
 

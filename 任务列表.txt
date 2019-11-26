@@ -44,7 +44,7 @@ coredata
 
 1.Objective-C基础（NO）
 
-6.动画&绘图（未完成）
+图形和动画 ：Core Animation ，OpenGL ES ，Quartz 2D
 
 13.项目过程中的问题（未完成）
 14.三方库 RAC - bind

@@ -1,0 +1,657 @@
+class 和 struct 的区别
+
+class 为类, struct 为结构体, 类是引用类型, 结构体为值类型, 结构体不可以继承
+不通过继承，代码复用（共享）的方式有哪些
+
+扩展, 全局函数
+Set 独有的方法有哪些？
+
+// 定义一个 set
+let setA: Set<Int> = [1, 2, 3, 4, 4]// {1, 2, 3, 4}, 顺序可能不一致, 同一个元素只有一个值
+let setB: Set<Int> = [1, 3, 5, 7, 9]// {1, 3, 5, 7, 9}
+// 取并集 A | B
+let setUnion = setA.union(setB)// {1, 2, 3, 4, 5, 7, 9}
+// 取交集 A & B
+let setIntersect = setA.intersection(setB)// {1, 3}
+// 取差集 A - B
+let setRevers = setA.subtracting(setB) // {2, 4}
+// 取对称差集, A XOR B = A - B | B - A
+let setXor = setA.symmetricDifference(setB) //{2, 4, 5, 7, 9}
+
+实现一个 min 函数，返回两个元素较小的元素
+
+func myMin<T: Comparable>(_ a: T, _ b: T) -> T {
+    return a < b ? a : b
+}
+myMin(1, 2)
+
+map、filter、reduce 的作用
+
+map 用于映射, 可以将一个列表转换为另一个列表
+
+[1, 2, 3].map{"\($0)"}// 数字数组转换为字符串数组
+["1", "2", "3"]
+
+filter 用于过滤, 可以筛选出想要的元素
+
+[1, 2, 3].filter{$0 % 2 == 0} // 筛选偶数
+// [2]
+
+reduce 合并
+
+[1, 2, 3].reduce(""){$0 + "\($1)"}// 转换为字符串并拼接
+// "123"
+
+组合示例
+
+(0 ..< 10).filter{$0 % 2 == 0}.map{"\($0)"}.reduce(""){$0 + $1}
+// 02468
+
+map 与 flatmap 的区别
+
+flatmap 有两个实现函数实现,
+public func flatMap<ElementOfResult>(_ transform: (Element) throws -> ElementOfResult?) rethrows -> [ElementOfResult]
+这个方法, 中间的函数返回值为一个可选值, 而 flatmap 会丢掉那些返回值为 nil 的值
+例如
+
+["1", "@", "2", "3", "a"].flatMap{Int($0)}
+// [1, 2, 3]
+["1", "@", "2", "3", "a"].map{Int($0) ?? -1}
+//[Optional(1), nil, Optional(2), Optional(3), nil]
+
+另一个实现
+public func flatMap<SegmentOfResult>(_ transform: (Element) throws -> SegmentOfResult) rethrows -> [SegmentOfResult.Iterator.Element] where SegmentOfResult : Sequence
+中间的函数, 返回值为一个数组, 而这个 flapmap 返回的对象则是一个与自己元素类型相同的数组
+
+func someFunc(_ array:[Int]) -> [Int] {
+    return array
+}
+[[1], [2, 3], [4, 5, 6]].map(someFunc)
+// [[1], [2, 3], [4, 5, 6]]
+[[1], [2, 3], [4, 5, 6]].flatMap(someFunc)
+// [1, 2, 3, 4, 5, 6]
+
+其实这个实现, 相当于是在使用 map 之后, 再将各个数组拼起来一样的
+
+[[1], [2, 3], [4, 5, 6]].map(someFunc).reduce([Int]()) {$0 + $1}
+// [1, 2, 3, 4, 5, 6]
+
+什么是 copy on write时候
+
+写时复制, 指的是 swift 中的值类型, 并不会在一开始赋值的时候就去复制, 只有在需要修改的时候, 才去复制.
+这里有详细的说明
+http://www.jianshu.com/p/7e8ba0659646
+如何获取当前代码的函数名和行号
+
+#file 用于获取当前文件文件名
+#line 用于获取当前行号
+#column 用于获取当前列编号
+#function 用于获取当前函数名
+以上这些都是特殊的字面量, 多用于调试输出日志
+具体可以看这里 apple 文档
+https://developer.apple.com/library/content/documentation/Swift/Conceptual/Swift_Programming_Language/Expressions.html
+这里有中文翻译
+http://wiki.jikexueyuan.com/project/swift/chapter3/04_Expressions.html
+如何声明一个只能被类 conform 的 protocol
+
+声明协议的时候, 加一个 class 即可
+如
+
+protocol SomeClassProtocl: class {
+    func someFunction()
+}
+
+guard 使用场景
+
+guard 和 if 类似, 不同的是, guard 总是有一个 else 语句, 如果表达式是假或者值绑定失败的时候, 会执行 else 语句, 且在 else 语句中一定要停止函数调用
+例如
+
+guard 1 + 1 == 2 else {
+    fatalError("something wrong")
+}
+
+常用使用场景为, 用户登录的时候, 验证用户是否有输入用户名密码等
+
+guard let userName = self.userNameTextField.text,
+  let password = self.passwordTextField.text else {
+    return
+}
+
+defer 使用场景
+
+defer 语句块中的代码, 会在当前作用域结束前调用, 常用场景如异常退出后, 关闭数据库连接
+
+func someQuery() -> ([Result], [Result]){
+    let db = DBOpen("xxx")
+    defer {
+        db.close()
+    }
+    guard results1 = db.query("query1") else {
+        return nil
+    }
+    guard results2 = db.query("query2") else {
+        return nil
+    }
+    return (results1, results2)
+}
+
+需要注意的是, 如果有多个 defer, 那么后加入的先执行
+
+func someDeferFunction() {
+    defer {
+        print("\(#function)-end-1-1")
+        print("\(#function)-end-1-2")
+    }
+    defer {
+        print("\(#function)-end-2-1")
+        print("\(#function)-end-2-2")
+    }
+    if true {
+        defer {
+            print("if defer")
+        }
+        print("if end")
+    }
+    print("function end")
+}
+someDeferFunction()
+// 输出
+// if end
+// if defer
+// function end
+// someDeferFunction()-end-2-1
+// someDeferFunction()-end-2-2
+// someDeferFunction()-end-1-1
+// someDeferFunction()-end-1-2
+
+String 与 NSString 的关系与区别
+
+NSString 与 String 之间可以随意转换,
+
+let someString = "123"
+let someNSString = NSString(string: "n123")
+let strintToNSString = someString as NSString
+let nsstringToString = someNSString as String
+
+String 是结构体, 值类型, NSString 是类, 引用类型.
+通常, 没必要使用 NSString 类, 除非你要使用一些特有方法, 例如使用 pathExtension 属性
+怎么获取一个 String 的长度
+
+不考虑编码, 只是想知道字符的数量, 用characters.count
+
+"hello".characters.count // 5
+"你好".characters.count // 2
+"こんにちは".characters.count // 5
+
+如果想知道在某个编码下占多少字节, 可以用
+
+"hello".lengthOfBytes(using: .ascii) // 5
+"hello".lengthOfBytes(using: .unicode) // 10
+"你好".lengthOfBytes(using: .unicode) // 4
+"你好".lengthOfBytes(using: .utf8) // 6
+"こんにちは".lengthOfBytes(using: .unicode) // 10
+"こんにちは".lengthOfBytes(using: .utf8) // 15
+
+如何截取 String 的某段字符串
+
+swift 中, 有三个取子串函数,
+substring:to , substring:from, substring:with.
+
+let simpleString = "Hello, world"
+simpleString.substring(to: simpleString.index(simpleString.startIndex, offsetBy: 5))
+// hello
+simpleString.substring(from: simpleString.index(simpleString.endIndex, offsetBy: -5))
+// world
+simpleString.substring(with: simpleString.index(simpleString.startIndex, offsetBy: 5) ..< simpleString.index(simpleString.endIndex, offsetBy: -5))
+// ,
+
+使用起来略微麻烦, 具体用法可以参考我的另一篇文章http://www.jianshu.com/p/b3231f9406e9
+throws 和 rethrows 的用法与作用
+
+throws 用在函数上, 表示这个函数会抛出错误.
+有两种情况会抛出错误, 一种是直接使用 throw 抛出, 另一种是调用其他抛出异常的函数时, 直接使用 try xx 没有处理异常.
+如
+
+enum DivideError: Error {
+    case EqualZeroError;
+}
+func divide(_ a: Double, _ b: Double) throws -> Double {
+    guard b != Double(0) else {
+        throw DivideError.EqualZeroError
+    }
+    return a / b
+}
+func split(pieces: Int) throws -> Double {
+    return try divide(1, Double(pieces))
+}
+
+rethrows 与 throws 类似, 不过只适用于参数中有函数, 且函数会抛出异常的情况, rethrows 可以用 throws 替换, 反过来不行
+如
+
+func processNumber(a: Double, b: Double, function: (Double, Double) throws -> Double) rethrows -> Double {
+    return try function(a, b)
+}
+
+try？ 和 try！是什么意思
+
+这两个都用于处理可抛出异常的函数, 使用这两个关键字可以不用写 do catch.
+区别在于, try? 在用于处理可抛出异常函数时, 如果函数抛出异常, 则返回 nil, 否则返回函数返回值的可选值, 如:
+
+print(try? divide(2, 1))
+// Optional(2.0)
+print(try? divide(2, 0))
+// nil
+
+而 try! 则在函数抛出异常的时候崩溃, 否则则返会函数返回值, 相当于(try? xxx)!, 如:
+
+print(try! divide(2, 1))
+// 2.0
+print(try! divide(2, 0))
+// 崩溃
+
+associatedtype 的作用
+
+简单来说就是 protocol 使用的泛型
+例如定义一个列表协议
+
+protocol ListProtcol {
+    associatedtype Element
+    func push(_ element:Element)
+    func pop(_ element:Element) -> Element?
+}
+
+实现协议的时候, 可以使用 typealias 指定为特定的类型, 也可以自动推断, 如
+
+class IntList: ListProtcol {
+    typealias Element = Int // 使用 typealias 指定为 Int
+    var list = [Element]()
+    func push(_ element: Element) {
+        self.list.append(element)
+    }
+    func pop(_ element: Element) -> Element? {
+        return self.list.popLast()
+    }
+}
+class DoubleList: ListProtcol {
+    var list = [Double]()
+    func push(_ element: Double) {// 自动推断
+        self.list.append(element)
+    }
+    func pop(_ element: Double) -> Double? {
+        return self.list.popLast()
+    }
+}
+
+使用泛型也可以
+
+class AnyList<T>: ListProtcol {
+    var list = [T]()
+    func push(_ element: T) {
+        self.list.append(element)
+    }
+    func pop(_ element: T) -> T? {
+        return self.list.popLast()
+    }
+}
+
+可以使用 where 字句限定 Element 类型, 如:
+
+extension ListProtcol where Element == Int {
+    func isInt() ->Bool {
+        return true
+    }
+}
+
+什么时候使用 final
+
+final 用于限制继承和重写. 如果只是需要在某一个属性前加一个 final.
+如果需要限制整个类无法被继承, 那么可以在类名之前加一个final
+public 和 open 的区别
+
+这两个都用于在模块中声明需要对外界暴露的函数, 区别在于, public 修饰的类, 在模块外无法继承, 而 open 则可以任意继承, 公开度来说, public < open
+声明一个只有一个参数没有返回值闭包的别名
+
+没有返回值也就是返回值为 Void
+
+typealias SomeClosuerType = (String) -> (Void)
+let someClosuer: SomeClosuerType = { (name: String) in
+    print("hello,", name)
+}
+someClosuer("world")
+// hello, world
+
+Self 的使用场景
+
+Self 通常在协议中使用, 用来表示实现者或者实现者的子类类型.
+例如, 定义一个复制的协议
+
+protocol CopyProtocol {
+    func copy() -> Self
+}
+
+如果是结构体去实现, 要将Self 换为具体的类型
+
+struct SomeStruct: CopyProtocol {
+    let value: Int
+    func copySelf() -> SomeStruct {
+        return SomeStruct(value: self.value)
+    }
+}
+
+如果是类去实现, 则有点复杂, 需要有一个 required 初始化方法, 具体可以看这里 http://swifter.tips/use-self/
+
+class SomeCopyableClass: CopyProtocol {
+    func copySelf() -> Self {
+        return type(of: self).init()
+    }
+    required init(){}
+}
+
+dynamic 的作用
+
+由于 swift 是一个静态语言, 所以没有 Objective-C 中的消息发送这些动态机制, dynamic 的作用就是让 swift 代码也能有 Objective-C 中的动态机制, 常用的地方就是 KVO 了, 如果要监控一个属性, 则必须要标记为 dynamic, 可以参考我的文章http://www.jianshu.com/p/ae26100b9edf
+什么时候使用 @objc
+
+@objc 用途是为了在 Objective-C 和 Swift 混编的时候, 能够正常调用 Swift 代码. 可以用于修饰类, 协议, 方法, 属性.
+常用的地方是在定义 delegate 协议中, 会将协议中的部分方法声明为可选方法, 需要用到@objc
+
+@objc protocol OptionalProtocol {
+    @objc optional func optionalFunc()
+    func normalFunc()
+}
+class OptionProtocolClass: OptionalProtocol {
+    func normalFunc() {
+    }
+}
+let someOptionalDelegate: OptionalProtocol = OptionProtocolClass()
+someOptionalDelegate.optionalFunc?()
+
+Optional（可选型） 是用什么实现的
+
+Optional 是一个泛型枚举
+大致定义如下:
+
+enum Optional<Wrapped> {
+  case none
+  case some(Wrapped)
+}
+
+除了使用 let someValue: Int? = nil 之外, 还可以使用let optional1: Optional<Int> = nil 来定义
+如何自定义下标获取
+
+实现 subscript 即可, 如
+
+extension AnyList {
+    subscript(index: Int) -> T{
+        return self.list[index]
+    }
+    subscript(indexString: String) -> T?{
+        guard let index = Int(indexString) else {
+            return nil
+        }
+        return self.list[index]
+    }
+}
+
+索引除了数字之外, 其他类型也是可以的
+?? 的作用
+
+可选值的默认值, 当可选值为nil 的时候, 会返回后面的值. 如
+let someValue = optional1 ?? 0
+lazy 的作用
+
+懒加载, 当属性要使用的时候, 才去完成初始化
+如
+
+class LazyClass {
+    lazy var someLazyValue: Int = {
+        print("lazy init value")
+        return 1
+    }()
+    var someNormalValue: Int = {
+        print("normal init value")
+        return 2
+    }()
+}
+let lazyInstance = LazyClass()
+print(lazyInstance.someNormalValue)
+print(lazyInstance.someLazyValue)
+// 打印输出
+// normal init value
+// 2
+// lazy init value
+// 1
+
+一个类型表示选项，可以同时表示有几个选项选中（类似 UIViewAnimationOptions ），用什么类型表示
+
+需要实现自 OptionSet, 一般使用 struct 实现. 由于 OptionSet 要求有一个不可失败的init(rawValue:) 构造器, 而 枚举无法做到这一点(枚举的原始值构造器是可失败的, 而且有些组合值, 是没办法用一个枚举值表示的)
+
+struct SomeOption: OptionSet {
+    let rawValue: Int
+    static let option1 = SomeOption(rawValue: 1 << 0)
+    static let option2 =  SomeOption(rawValue:1 << 1)
+    static let option3 =  SomeOption(rawValue:1 << 2)
+}
+let options: SomeOption = [.option1, .option2]
+
+inout 的作用
+
+输入输出参数, 如:
+
+func swap( a: inout Int, b: inout Int) {
+    let temp = a
+    a = b
+    b = temp
+}
+var a = 1
+var b = 2
+print(a, b)// 1 2
+swap(a: &a, b: &b)
+print(a, b)// 2 1
+
+Error 如果要兼容 NSError 需要做什么操作
+
+其实直接转换就可以, 例如 SomeError.someError as NSError 但是这样没有错误码, 描述等等, 如果想和 NSError 一样有这些东西, 只需要实现 LocalizedError 和 CustomNSError 协议, 有些方法有默认实现, 可以略过, 如:
+
+enum SomeError: Error, LocalizedError, CustomNSError {
+    case error1, error2
+    public var errorDescription: String? {
+        switch self {
+        case .error1:
+            return "error description error1"
+        case .error2:
+            return "error description error2"
+        }
+    }
+    var errorCode: Int {
+        switch self {
+        case .error1:
+            return 1
+        case .error2:
+            return 2
+        }
+    }
+    public static var errorDomain: String {
+        return "error domain SomeError"
+    }
+    public var errorUserInfo: [String : Any] {
+        switch self {
+        case .error1:
+            return ["info": "error1"]
+        case .error2:
+            return ["info": "error2"]
+        }
+    }
+}
+print(SomeError.error1 as NSError)
+// Error Domain=error domain SomeError Code=1 "error description error1" UserInfo={info=error1}
+
+下面的代码都用了哪些语法糖
+
+[1, 2, 3].map{ $0 * 2 }
+[1, 2, 3] 使用了, Array 实现的ExpressibleByArrayLiteral 协议, 用于接收数组的字面值
+map{xxx} 使用了闭包作为作为最后一个参数时, 可以直接写在调用后面, 而且, 如果是唯一参数的话, 圆括号也可以省略
+闭包没有声明函数参数, 返回值类型, 数量, 依靠的是闭包类型的自动推断
+闭包中语句只有一句时, 自动将这一句的结果作为返回值
+0 在没有声明参数列表的时候, 第一个参数名称为0, 后续参数以此类推
+什么是高阶函数
+
+一个函数如果可以以某一个函数作为参数, 或者是返回值, 那么这个函数就称之为高阶函数, 如 map, reduce, filter
+如何解决引用循环
+
+    转换为值类型, 只有类会存在引用循环, 所以如果能不用类, 是可以解引用循环的,
+    delegate 使用 weak 属性.
+    闭包中, 对有可能发生循环引用的对象, 使用 weak 或者 unowned, 修饰
+
+下面的代码会不会崩溃，说出原因
+
+var mutableArray = [1,2,3]
+for _ in mutableArray {
+  mutableArray.removeLast()
+}
+
+不会, 原理不清楚, 就算是把 removeLast(), 换成 removeAll() ,这个循环也会执行三次, 估计是在一开始, for
+in 就对 mutableArray 进行了一次值捕获, 而 Array 是一个值类型 , removeLast() 并不能修改捕获的值.
+给集合中元素是字符串的类型增加一个扩展方法，应该怎么声明
+
+使用 where 子句, 限制 Element 为 String
+
+extension Array where Element == String {
+    var isStringElement:Bool {
+        return true
+    }
+}
+["1", "2"].isStringElement
+//[1, 2].isStringElement// error
+
+定义静态方法时关键字 static 和 class 有什么区别
+
+static 定义的方法不可以被子类继承, class 则可以
+
+class AnotherClass {
+    static func staticMethod(){}
+    class func classMethod(){}
+}
+class ChildOfAnotherClass: AnotherClass {
+    override class func classMethod(){}
+    //override static func staticMethod(){}// error
+}
+
+一个 Sequence 的索引是不是一定从 0 开始？
+
+不一定, 两个 for in 并不能保证都是从 0 开始, 且输出结果一致, 官方文档如下
+
+    Repeated Access
+
+    The Sequence protocol makes no requirement on conforming types regarding
+    whether they will be destructively consumed by iteration. As a
+    consequence, don't assume that multiple for-in loops on a sequence
+    will either resume iteration or restart from the beginning:
+
+    for element in sequence {
+        if ... some condition { break }
+    }
+
+    for element in sequence {
+        // No defined behavior
+    }
+
+有些同学还是不太理解, 我写了一个demo 当作参考
+
+class Countdown: Sequence, IteratorProtocol {
+    var count: Int
+    init(count: Int) {
+        self.count = count
+    }
+    func next() -> Int? {
+       if count == 0 {
+           return nil
+       } else {
+           defer { count -= 1 }
+           return count
+       }
+   }
+}
+
+var countDown = Countdown(count: 5)
+print("begin for in 1")
+for c in countDown {
+    print(c)
+}
+print("end for in 1")
+print("begin for in 2")
+for c in countDown {
+    print(c)
+}
+print("end for in 2")
+
+最后输出的结果是
+
+begin for in 1
+5
+4
+3
+2
+1
+end for in 1
+begin for in 2
+end for in 2
+
+很明显, 第二次没有输出任何结果, 原因就是在第二次for in 的时候, 并没有将count 重置.
+数组都实现了哪些协议
+
+MutableCollection, 实现了可修改的数组, 如 a[1] = 2
+ExpressibleByArrayLiteral, 实现了数组可以从[1, 2, 3] 这种字面值初始化的能力
+...
+如何自定义模式匹配
+
+这部分不太懂, 贴个链接吧
+http://swifter.tips/pattern-match/
+autoclosure 的作用
+
+自动闭包, 会自动将某一个表达式封装为闭包. 如
+
+func autoClosureFunction(_ closure: @autoclosure () -> Int) {
+   closure()
+}
+autoClosureFunction(1)
+
+详细可参考http://swifter.tips/autoclosure/
+编译选项 whole module optmization 优化了什么
+
+编译器可以跨文件优化编译代码, 不局限于一个文件.
+http://www.jianshu.com/p/8dbf2bb05a1c
+下面代码中 mutating 的作用是什么
+
+struct Person {
+  var name: String {
+      mutating get {
+          return store
+      }
+  }
+}
+
+让不可变对象无法访问 name 属性
+如何让自定义对象支持字面量初始化
+
+有几个协议, 分别是
+ExpressibleByArrayLiteral 可以由数组形式初始化
+ExpressibleByDictionaryLiteral 可以由字典形式初始化
+ExpressibleByNilLiteral 可以由nil 值初始化
+ExpressibleByIntegerLiteral 可以由整数值初始化
+ExpressibleByFloatLiteral 可以由浮点数初始化
+ExpressibleByBooleanLiteral 可以由布尔值初始化
+ExpressibleByUnicodeScalarLiteral
+ExpressibleByExtendedGraphemeClusterLiteral
+ExpressibleByStringLiteral
+这三种都是由字符串初始化, 上面两种包含有 Unicode 字符和特殊字符
+dynamic framework 和 static framework 的区别是什么
+
+    静态库和动态库, 静态库是每一个程序单独打包一份, 而动态库则是多个程序之间共享
+
+
+
+作者：leiyulingling
+链接：https://www.jianshu.com/p/a70841d17fb2
+来源：简书
+著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
